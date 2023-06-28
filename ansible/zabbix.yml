@@ -34,13 +34,6 @@
         state: present
         update_cache: yes
 
-    #- name: Install Docker Compose
-    #  shell: |
-    #    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    #    chmod +x /usr/local/bin/docker-compose
-    #  args:
-    #    executable: /bin/bash
-
     - name: Add user to the docker group
       user:
         name: "{{ ansible_user }}"
@@ -66,8 +59,8 @@
 
     - name: Copy Docker Compose file
       copy:
-        src: ../docker-compose/zabbix-docker-compose.yml
-        dest: /home/{{ ansible_user }}/zabbix-docker-compose.yml
+        src: ../docker-compose/
+        dest: /home/{{ ansible_user }}/
 
     - name: Launch Docker Compose
-      command: docker compose -f /home/{{ ansible_user }}/zabbix-docker-compose.yml up -d
+      command: docker compose -f /home/{{ ansible_user }}/zabbix-docker-compose.yaml up -d

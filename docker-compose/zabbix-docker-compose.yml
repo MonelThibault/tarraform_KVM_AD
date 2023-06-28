@@ -9,7 +9,6 @@ services:
       MYSQL_USER: 'zabbix'
       MYSQL_PASSWORD: 'zabbix123'
       MYSQL_ROOT_PASSWORD: 'password'
-      MYSQL_SSL: 'false'
     ports:
       # <Port exposed> : <MySQL Port running inside container>
       - '3306:3306'
@@ -30,7 +29,6 @@ services:
       - DB_SERVER_HOST=192.168.122.158
       - MYSQL_USER=zabbix
       - MYSQL_PASSWORD=zabbix123
-      - ZBX_DBTLSCONNECT=required
     ports:
       - 10051:10051
 
@@ -48,9 +46,11 @@ services:
       - MYSQL_USER=zabbix
       - MYSQL_PASSWORD=zabbix123
       - ZBX_SERVER_HOST=192.168.122.158
-      - PHP_TZ=Europe/Riga
+      - PHP_TZ=Europe/Paris
     ports:
       - 80:8080
+    volumes:
+    - ./my.cnf:/etc/mysql/conf.d/disable-ssl.cnf
     command: >
       bash -c "
       /usr/bin/mysql -h 192.168.122.158 -u root -ppassword -e \"GRANT ALL PRIVILEGES ON zabbix.* TO 'zabbix'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;\""
