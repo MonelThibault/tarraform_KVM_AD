@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: 'zabbix'
+      MYSQL_USER: 'zabbix'
+      MYSQL_PASSWORD: 'zabbix123'
+      MYSQL_ROOT_PASSWORD: 'password'
+      MYSQL_SSL: 'false'
+    ports:
+      # <Port exposed> : <MySQL Port running inside container>
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - my-db:/var/lib/mysql
+
+  zabbix-server-mysql:
+    image: zabbix/zabbix-server-mysql:latest
+    container_name: zabbix-server-mysql
+    restart: unless-stopped
+    depends_on:
+      - db
+    networks:
+      - zabbix-net
+    environment:
+      - DB_SERVER_HOST=192.168.122.158
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=zabbix123
+      - ZBX_DBTLSCONNECT=required
+    ports:
+      - 10051:10051
+
+  zabbix-web-apache-mysql:
+    image: zabbix/zabbix-web-apache-mysql:latest
+    container_name: zabbix-web-apache-mysql
+    restart: unless-stopped
+    depends_on:
+      - db
+      - zabbix-server-mysql
+    networks:
+      - zabbix-net
+    environment:
+      - DB_SERVER_HOST=192.168.122.158
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=zabbix123
+      - ZBX_SERVER_HOST=192.168.122.158
+      - PHP_TZ=Europe/Riga
+    ports:
+      - 80:8080
+    command: >
+      bash -c "
+      /usr/bin/mysql -h 192.168.122.158 -u root -ppassword -e \"GRANT ALL PRIVILEGES ON zabbix.* TO 'zabbix'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;\""
+
+networks:
+  zabbix-net:
+    name: zabbix-net
+    external: true
+
+volumes:
+  my-db:

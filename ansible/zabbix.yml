@@ -1,0 +1,73 @@
+---
+- name: Install Docker and dependencies
+  hosts: zabbix
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - software-properties-common
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable
+        state: present
+
+    - name: Update apt and install Docker
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: yes
+
+    #- name: Install Docker Compose
+    #  shell: |
+    #    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    #    chmod +x /usr/local/bin/docker-compose
+    #  args:
+    #    executable: /bin/bash
+
+    - name: Add user to the docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Check if Docker network exists
+      become: true
+      command: docker network inspect zabbix-net
+      register: network_inspect
+      ignore_errors: true
+
+    - name: Create Docker network
+      become: true
+      command: docker network create --subnet 172.20.0.0/16 --ip-range 172.20.240.0/20 zabbix-net
+      when: network_inspect.rc != 0
+
+    - name: Copy Docker Compose file
+      copy:
+        src: ../docker-compose/zabbix-docker-compose.yml
+        dest: /home/{{ ansible_user }}/zabbix-docker-compose.yml
+
+    - name: Launch Docker Compose
+      command: docker compose -f /home/{{ ansible_user }}/zabbix-docker-compose.yml up -d

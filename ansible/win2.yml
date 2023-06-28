@@ -1,0 +1,54 @@
+---
+  - name: Trying not to kill myself
+    hosts: vm_windows
+    tasks:
+    #- name: Configure role(s) on a Windows server instance
+    #  hosts: all
+    #  tasks: 
+    #
+    #- name: Run powershell commands to prepare the DC 
+    #  ansible.windows.win_powershell:
+    #    script: |
+    #
+    #- name: Configure role(s) on a Windows server instance
+    #  hosts: all
+    #  tasks: 
+
+    - name: Run powershell commands to prepare the DC 
+      ansible.windows.win_powershell:
+        script: |
+          Add-WindowsFeature AD-Domain-Services
+          Set-TimeZone -Name "Romance Standard Time"
+
+    - name: Change the hostname 
+      ansible.windows.win_hostname:
+        name: dc
+      register: hostname
+
+    - name: Reboot
+      ansible.windows.win_reboot:
+      when: hostname.reboot_required
+
+    - name: Set up static IP address
+      win_shell: "Get-NetIpAddress -InterfaceAlias 'Ethernet*' | New-NetIpAddress -IpAddress 10.0.2.100 -PrefixLength 24 -DefaultGateway 10.0.2.2"
+      async: 100 # Using "fire-and-forget" asynchronous execution for this task, otherwise it will always fail and timeout
+      poll: 0
+
+    - name: Wait for the hosts network interface to come back up
+      local_action:
+        module: wait_for
+        host: "{{ ansible_host }}"
+        port: 5985
+        delay: 10
+        state: started
+      register: wait_result
+
+    - name: Install ADDS role and configure it with minimal option
+      ansible.windows.win_domain:
+        dns_domain_name: itconnect.local
+        safe_mode_password: password123!
+      register: domain_install
+
+    - name: Reboot after promotion
+      ansible.windows.win_reboot:
+      when: domain_install.reboot_required

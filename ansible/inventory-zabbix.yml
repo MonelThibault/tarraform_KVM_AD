@@ -1,0 +1,6 @@
+virtualmachines:
+ hosts:
+   zabbix:
+    ansible_host: 192.168.122.158
+    ansible_user: salem
+    #ansible_password: qwertQ123!

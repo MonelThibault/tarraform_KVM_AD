@@ -1,0 +1,15 @@
+virtualmachines:
+ hosts:
+   vm_windows:
+    ansible_host: 192.168.122.227
+    ansible_user: Administrator
+    #ansible_password: qwertQ123!
+    #ansible_port: 5985
+    #ansible_connection: winrm
+    #ansible_winrm_transport: basic
+    #ansible_winrm_server_cert_validation: ignore
+    #ansible_winrm_message_encryption: never
+    remote_tmp: C:\Users\Administrator\Tmp
+    become_method: runas 
+    ansible_shell_type: cmd 
+    shell_type: powershell
